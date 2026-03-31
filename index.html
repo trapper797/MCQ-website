@@ -143,6 +143,18 @@ header .tagline { font-family: 'Space Mono', monospace; font-size: 0.72rem; colo
 [data-theme="light"] #manual-submit { color: #fff; }
 #manual-submit:hover { opacity: 0.85; }
 
+.timer-setup { margin-top: 22px; text-align: left; border-top: 1px solid var(--border); padding-top: 20px; }
+.timer-setup label { font-size: 0.8rem; color: var(--muted); font-family: 'Space Mono', monospace; display: block; margin-bottom: 10px; }
+.timer-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.timer-input {
+  width: 110px; padding: 10px 12px;
+  background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius);
+  color: var(--text); font-family: 'Space Mono', monospace; font-size: 0.82rem;
+}
+.timer-input:focus { outline: none; border-color: var(--accent2); }
+.timer-note { margin-top: 8px; color: var(--muted); font-size: 0.72rem; font-family: 'Space Mono', monospace; }
+.timer-expired { color: var(--wrong) !important; }
+
 /* ═══════════════════════════════════════════
    QUIZ
 ═══════════════════════════════════════════ */
@@ -152,6 +164,29 @@ header .tagline { font-family: 'Space Mono', monospace; font-size: 0.72rem; colo
 .quiz-meta { font-family: 'Space Mono', monospace; font-size: 0.75rem; color: var(--muted); display: flex; gap: 16px; }
 .quiz-meta span { color: var(--accent2); }
 
+.quiz-tools { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.info-pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 14px; border-radius: 99px;
+  border: 1px solid var(--border); background: var(--surface);
+  font-family: 'Space Mono', monospace; font-size: 0.74rem; color: var(--muted);
+}
+.info-pill strong { color: var(--text); font-weight: 700; }
+
+.bookmarks-bar { display: none; margin: -8px 0 22px; }
+.bookmarks-bar.active { display: block; }
+.bookmarks-title {
+  font-family: 'Space Mono', monospace; font-size: 0.72rem;
+  color: var(--muted); margin-bottom: 10px; letter-spacing: 0.05em;
+}
+.bookmarks-list { display: flex; gap: 8px; flex-wrap: wrap; }
+.bookmark-chip {
+  border: 1px solid var(--border); background: var(--surface); color: var(--text);
+  border-radius: 99px; padding: 8px 12px; cursor: pointer;
+  font-family: 'Space Mono', monospace; font-size: 0.75rem; transition: 0.15s;
+}
+.bookmark-chip:hover { border-color: var(--accent2); color: var(--accent2); }
+
 .progress-bar-wrap { height: 4px; background: var(--border); border-radius: 99px; margin-bottom: 40px; overflow: hidden; }
 .progress-bar { height: 100%; background: var(--accent); border-radius: 99px; transition: width 0.3s ease; width: 0%; }
 
@@ -159,11 +194,23 @@ header .tagline { font-family: 'Space Mono', monospace; font-size: 0.72rem; colo
 .q-card {
   background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
   padding: 14px 18px; display: flex; align-items: center; gap: 18px;
-  transition: border-color 0.15s, background 0.3s;
+  transition: border-color 0.15s, background 0.3s, transform 0.15s;
+  scroll-margin-top: 24px;
 }
 .q-card:hover { border-color: var(--accent2); }
 .q-num { font-family: 'Space Mono', monospace; font-size: 0.75rem; color: var(--muted); width: 28px; flex-shrink: 0; text-align: right; }
 .q-options { display: flex; gap: 7px; flex-wrap: wrap; }
+.q-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.bookmark-btn {
+  width: 40px; height: 40px; border-radius: 50%; border: 1.5px solid var(--border);
+  background: transparent; color: var(--muted); cursor: pointer; font-size: 1rem;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: border-color 0.15s, color 0.15s, background 0.15s, transform 0.1s;
+}
+.bookmark-btn:hover { border-color: var(--accent2); color: var(--accent2); transform: scale(1.06); }
+.bookmark-btn.active { border-color: var(--accent); color: var(--bg); background: var(--accent); }
+.q-card.bookmarked { border-color: var(--accent2); box-shadow: 0 0 0 1px rgba(71,197,255,0.12) inset; }
+.q-card.jump-highlight { transform: translateY(-2px); box-shadow: 0 0 0 1px var(--accent2), var(--shadow); }
 
 .opt-btn {
   width: 40px; height: 40px; border-radius: var(--radius);
@@ -183,7 +230,7 @@ header .tagline { font-family: 'Space Mono', monospace; font-size: 0.72rem; colo
 .opt-btn.result-correct-sel { background: var(--correct); border-color: var(--correct); color: #0d0f14; }
 .opt-btn.result-wrong-sel   { background: var(--wrong);   border-color: var(--wrong);   color: #fff; }
 .opt-btn.result-show-correct { border-color: var(--correct); color: var(--correct); }
-.q-result-label { margin-left: auto; font-family: 'Space Mono', monospace; font-size: 0.7rem; flex-shrink: 0; }
+.q-result-label { font-family: 'Space Mono', monospace; font-size: 0.7rem; flex-shrink: 0; }
 .q-result-label.ok   { color: var(--correct); }
 .q-result-label.bad  { color: var(--wrong); }
 .q-result-label.skip { color: var(--muted); }
@@ -329,15 +376,33 @@ header .tagline { font-family: 'Space Mono', monospace; font-size: 0.72rem; colo
       <textarea id="manual-input" placeholder="1. D&#10;2. A&#10;3. B&#10;4. C&#10;..."></textarea>
       <button id="manual-submit">Load Answers</button>
     </div>
+
+    <div class="timer-setup">
+      <label for="timer-hours">Set a countdown timer before you start (for example, 1 hour):</label>
+      <div class="timer-row">
+        <input type="number" id="timer-hours" class="timer-input" min="0" max="23" value="1" placeholder="Hours">
+        <input type="number" id="timer-minutes" class="timer-input" min="0" max="59" value="0" placeholder="Minutes">
+        <input type="number" id="timer-seconds" class="timer-input" min="0" max="59" value="0" placeholder="Seconds">
+      </div>
+      <div class="timer-note">The countdown begins automatically when the answer sheet opens. When time reaches zero, the quiz submits itself.</div>
+    </div>
   </div>
 
   <!-- QUIZ -->
   <div id="quiz-section">
     <div class="quiz-header">
       <h2>Answer Sheet</h2>
-      <div class="quiz-meta">Questions: <span id="meta-total">—</span>&nbsp;·&nbsp;Answered: <span id="meta-answered">0</span></div>
+      <div class="quiz-tools">
+        <div class="quiz-meta">Questions: <span id="meta-total">—</span>&nbsp;·&nbsp;Answered: <span id="meta-answered">0</span></div>
+        <div class="info-pill">⏱ <span>Remaining</span> <strong id="quiz-timer">01:00:00</strong></div>
+        <div class="info-pill">🔖 <span>Bookmarked</span> <strong id="bookmark-count">0</strong></div>
+      </div>
     </div>
     <div class="progress-bar-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+    <div class="bookmarks-bar" id="bookmarks-bar">
+      <div class="bookmarks-title">Quick jump to bookmarked questions</div>
+      <div class="bookmarks-list" id="bookmarks-list"></div>
+    </div>
     <div class="questions-grid" id="questions-grid"></div>
 
     <div id="submit-wrap">
@@ -385,6 +450,11 @@ pdfjsLib.GlobalWorkerOptions.workerSrc =
 /* ── STATE ───────────────────────────────── */
 let markScheme = {}, userAnswers = {}, submitted = false;
 let resultData = { correct: [], wrong: [], unanswered: [], excluded: [] };
+let bookmarkedQuestions = new Set();
+let timerInterval = null;
+let quizDeadline = null;
+let timeRemainingAtSubmit = 0;
+let timerDurationMs = 3600000;
 
 /* ── THEME ───────────────────────────────── */
 function setTheme(t) {
@@ -403,6 +473,13 @@ const manualSubmit  = document.getElementById('manual-submit');
 const quizSection   = document.getElementById('quiz-section');
 const questionsGrid = document.getElementById('questions-grid');
 const progressBar   = document.getElementById('progress-bar');
+const timerHoursInput = document.getElementById('timer-hours');
+const timerMinutesInput = document.getElementById('timer-minutes');
+const timerSecondsInput = document.getElementById('timer-seconds');
+const quizTimerEl   = document.getElementById('quiz-timer');
+const bookmarkCountEl = document.getElementById('bookmark-count');
+const bookmarksBar  = document.getElementById('bookmarks-bar');
+const bookmarksList = document.getElementById('bookmarks-list');
 const submitBtn     = document.getElementById('submit-btn');
 const resultsPanel  = document.getElementById('results-panel');
 const retryBtn      = document.getElementById('retry-btn');
@@ -410,6 +487,13 @@ const overviewBtn   = document.getElementById('overview-btn');
 const modalOverlay  = document.getElementById('modal-overlay');
 const modalClose    = document.getElementById('modal-close');
 const modalBody     = document.getElementById('modal-body');
+
+[timerHoursInput, timerMinutesInput, timerSecondsInput].forEach(input => {
+  input.addEventListener('input', () => {
+    quizTimerEl.textContent = formatCountdown(getTimerDurationMs());
+    quizTimerEl.classList.remove('timer-expired');
+  });
+});
 
 /* ── DRAG & DROP ─────────────────────────── */
 uploadSection.addEventListener('dragover', e => { e.preventDefault(); uploadSection.classList.add('drag-over'); });
@@ -485,6 +569,7 @@ function buildQuiz() {
   const nums = Object.keys(markScheme).map(Number).sort((a,b) => a-b);
   userAnswers = {}; submitted = false;
   resultData = { correct: [], wrong: [], unanswered: [], excluded: [] };
+  bookmarkedQuestions = new Set();
   nums.forEach(n => userAnswers[n] = null);
   questionsGrid.innerHTML = '';
 
@@ -509,16 +594,113 @@ function buildQuiz() {
     nis.addEventListener('click', () => selectAnswer(n, 'NIS'));
     opts.appendChild(nis);
 
-    card.appendChild(numEl); card.appendChild(opts);
+    const actions = document.createElement('div');
+    actions.className = 'q-actions';
+
+    const bookmarkBtn = document.createElement('button');
+    bookmarkBtn.className = 'bookmark-btn';
+    bookmarkBtn.type = 'button';
+    bookmarkBtn.title = `Bookmark question ${n}`;
+    bookmarkBtn.setAttribute('aria-label', `Bookmark question ${n}`);
+    bookmarkBtn.textContent = '★';
+    bookmarkBtn.addEventListener('click', () => toggleBookmark(n));
+    actions.appendChild(bookmarkBtn);
+
+    card.appendChild(numEl);
+    card.appendChild(opts);
+    card.appendChild(actions);
     questionsGrid.appendChild(card);
   });
 
   document.getElementById('meta-total').textContent = nums.length;
   updateProgress();
+  renderBookmarks();
+  startQuizTimer();
   uploadSection.style.display = 'none';
   quizSection.style.display = 'block';
   resultsPanel.style.display = 'none';
   submitBtn.style.display = 'inline-block';
+}
+
+function toggleBookmark(qNum) {
+  const card = document.querySelector(`.q-card[data-q="${qNum}"]`);
+  const btn = card.querySelector('.bookmark-btn');
+
+  if (bookmarkedQuestions.has(qNum)) bookmarkedQuestions.delete(qNum);
+  else bookmarkedQuestions.add(qNum);
+
+  const isActive = bookmarkedQuestions.has(qNum);
+  card.classList.toggle('bookmarked', isActive);
+  btn.classList.toggle('active', isActive);
+  btn.title = isActive ? `Remove bookmark from question ${qNum}` : `Bookmark question ${qNum}`;
+  renderBookmarks();
+}
+
+function renderBookmarks() {
+  const sorted = [...bookmarkedQuestions].sort((a, b) => a - b);
+  bookmarkCountEl.textContent = sorted.length;
+  bookmarksList.innerHTML = '';
+  bookmarksBar.classList.toggle('active', sorted.length > 0);
+
+  sorted.forEach(q => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'bookmark-chip';
+    chip.textContent = `Q${q}`;
+    chip.addEventListener('click', () => jumpToQuestion(q));
+    bookmarksList.appendChild(chip);
+  });
+}
+
+function jumpToQuestion(qNum) {
+  const card = document.querySelector(`.q-card[data-q="${qNum}"]`);
+  if (!card) return;
+  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  card.classList.add('jump-highlight');
+  setTimeout(() => card.classList.remove('jump-highlight'), 1200);
+}
+
+function getTimerDurationMs() {
+  const hours = Math.max(0, parseInt(timerHoursInput.value || '0', 10) || 0);
+  const minutes = Math.max(0, parseInt(timerMinutesInput.value || '0', 10) || 0);
+  const seconds = Math.max(0, parseInt(timerSecondsInput.value || '0', 10) || 0);
+  const total = ((hours * 3600) + (minutes * 60) + seconds) * 1000;
+  return total > 0 ? total : 3600000;
+}
+
+function formatCountdown(ms) {
+  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+function updateTimerDisplay() {
+  const remaining = submitted ? timeRemainingAtSubmit : (quizDeadline ? quizDeadline - Date.now() : timerDurationMs);
+  const safeRemaining = Math.max(0, remaining);
+  quizTimerEl.textContent = formatCountdown(safeRemaining);
+  quizTimerEl.classList.toggle('timer-expired', safeRemaining === 0);
+
+  if (!submitted && safeRemaining === 0) {
+    clearInterval(timerInterval);
+    submitQuiz(true);
+  }
+}
+
+function startQuizTimer() {
+  clearInterval(timerInterval);
+  timerDurationMs = getTimerDurationMs();
+  timeRemainingAtSubmit = timerDurationMs;
+  quizDeadline = Date.now() + timerDurationMs;
+  updateTimerDisplay();
+  timerInterval = setInterval(updateTimerDisplay, 250);
+}
+
+function stopQuizTimer() {
+  if (quizDeadline) timeRemainingAtSubmit = Math.max(0, quizDeadline - Date.now());
+  clearInterval(timerInterval);
+  updateTimerDisplay();
 }
 
 /* ── SELECT ──────────────────────────────── */
@@ -539,8 +721,12 @@ function updateProgress() {
 }
 
 /* ── SUBMIT ──────────────────────────────── */
-submitBtn.addEventListener('click', () => {
+submitBtn.addEventListener('click', () => submitQuiz(false));
+
+function submitQuiz(triggeredByTimer = false) {
+  if (submitted) return;
   submitted = true; submitBtn.style.display = 'none';
+  stopQuizTimer();
   let correct = 0, wrong = 0, excluded = 0, unanswered = 0;
   resultData = { correct: [], wrong: [], unanswered: [], excluded: [] };
   const nums = Object.keys(markScheme).map(Number).sort((a,b) => a-b);
@@ -579,7 +765,7 @@ submitBtn.addEventListener('click', () => {
       lbl.textContent = '✗ ' + ca; lbl.classList.add('bad');
       resultData.wrong.push({ q: n, given: ua, correct: ca });
     }
-    card.appendChild(lbl);
+    card.querySelector('.q-actions').appendChild(lbl);
   });
 
   const counted = nums.length - excluded;
@@ -596,9 +782,14 @@ submitBtn.addEventListener('click', () => {
   document.getElementById('r-counted').textContent   = counted;
   document.getElementById('r-total').textContent     = nums.length;
 
+  if (triggeredByTimer) {
+    document.getElementById('grade-sub').textContent += ' · Auto-submitted when the timer ended';
+  }
+
   resultsPanel.style.display = 'block';
   resultsPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-});
+}
+
 
 /* ── OVERVIEW MODAL ──────────────────────── */
 overviewBtn.addEventListener('click', () => {
@@ -653,6 +844,13 @@ retryBtn.addEventListener('click', () => {
   manualInput.value = '';
   markScheme = {}; userAnswers = {}; submitted = false;
   resultData = { correct: [], wrong: [], unanswered: [], excluded: [] };
+  bookmarkedQuestions = new Set();
+  clearInterval(timerInterval);
+  quizDeadline = null;
+  timeRemainingAtSubmit = timerDurationMs;
+  quizTimerEl.textContent = formatCountdown(getTimerDurationMs());
+  quizTimerEl.classList.remove('timer-expired');
+  renderBookmarks();
 });
 </script>
 </body>
