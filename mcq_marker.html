@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCQ Marker</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+/* ═══════════════════════════════════════════
+   THEMES
+═══════════════════════════════════════════ */
+:root {
+  /* Dark (default) */
+  --bg: #0d0f14;
+  --surface: #161921;
+  --surface2: #1e222e;
+  --border: #2a3045;
+  --accent: #e8ff47;
+  --accent2: #47c5ff;
+  --text: #e8eaf0;
+  --muted: #6b7289;
+  --correct: #3ddc84;
+  --wrong: #ff5c6a;
+  --radius: 8px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+
+[data-theme="light"] {
+  --bg: #f4f5f8;
+  --surface: #ffffff;
+  --surface2: #eaecf2;
+  --border: #d0d4e0;
+  --accent: #1a1a2e;
+  --accent2: #4361ee;
+  --text: #1a1a2e;
+  --muted: #7c84a0;
+  --correct: #1a9e5c;
+  --wrong: #d93b4a;
+  --shadow: 0 4px 24px rgba(0,0,0,0.08);
+}
+
+[data-theme="purple"] {
+  --bg: #120e1e;
+  --surface: #1c1630;
+  --surface2: #251e3e;
+  --border: #3a2f5e;
+  --accent: #c77dff;
+  --accent2: #ff8fab;
+  --text: #ede8ff;
+  --muted: #7b6fa8;
+  --correct: #56cfb2;
+  --wrong: #ff6b6b;
+  --shadow: 0 4px 24px rgba(0,0,0,0.5);
+}
+
+/* ═══════════════════════════════════════════
+   BASE
+═══════════════════════════════════════════ */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; min-height: 100vh; transition: background 0.3s, color 0.3s; }
+
+/* ═══════════════════════════════════════════
+   HEADER
+═══════════════════════════════════════════ */
+header {
+  padding: 24px 40px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 14px; }
+header h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.03em; color: var(--accent); }
+header .tagline { font-family: 'Space Mono', monospace; font-size: 0.72rem; color: var(--muted); letter-spacing: 0.08em; }
+
+/* Theme switcher */
+.theme-switcher { display: flex; gap: 8px; align-items: center; }
+.theme-switcher span { font-family: 'Space Mono', monospace; font-size: 0.7rem; color: var(--muted); margin-right: 4px; }
+.theme-btn {
+  width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--border);
+  cursor: pointer; transition: border-color 0.2s, transform 0.15s;
+  position: relative;
+}
+.theme-btn:hover { transform: scale(1.15); border-color: var(--accent); }
+.theme-btn.active { border-color: var(--accent); }
+.theme-btn[data-t="dark"]   { background: linear-gradient(135deg, #0d0f14 50%, #e8ff47 50%); }
+.theme-btn[data-t="light"]  { background: linear-gradient(135deg, #f4f5f8 50%, #1a1a2e 50%); }
+.theme-btn[data-t="purple"] { background: linear-gradient(135deg, #120e1e 50%, #c77dff 50%); }
+
+/* ═══════════════════════════════════════════
+   CONTAINER
+═══════════════════════════════════════════ */
+.container { max-width: 900px; margin: 0 auto; padding: 40px 24px 80px; }
+
+/* ═══════════════════════════════════════════
+   UPLOAD
+═══════════════════════════════════════════ */
+#upload-section {
+  border: 2px dashed var(--border); border-radius: 16px;
+  padding: 48px 32px 36px; text-align: center;
+  transition: border-color 0.2s, background 0.2s;
+}
+#upload-section.drag-over { border-color: var(--accent); background: rgba(128,128,128,0.04); }
+#file-input-label {
+  display: inline-block; margin-top: 16px; padding: 10px 28px;
+  background: var(--surface2); border: 1.5px solid var(--border); border-radius: 99px;
+  color: var(--text); font-family: 'Space Mono', monospace; font-size: 0.8rem; cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+#file-input-label:hover { border-color: var(--accent); color: var(--accent); }
+#file-input { display: none; }
+.upload-icon { font-size: 2.5rem; margin-bottom: 12px; display: block; }
+#upload-section h2 { font-size: 1.2rem; font-weight: 600; margin-bottom: 6px; }
+#upload-section > p { color: var(--muted); font-size: 0.85rem; font-family: 'Space Mono', monospace; }
+#file-name { margin-top: 14px; font-size: 0.8rem; font-family: 'Space Mono', monospace; color: var(--accent2); min-height: 18px; }
+
+#parse-error {
+  display: none; margin-top: 16px;
+  background: rgba(255,92,106,0.10); border: 1px solid var(--wrong);
+  border-radius: var(--radius); padding: 12px 16px;
+  color: var(--wrong); font-family: 'Space Mono', monospace; font-size: 0.8rem;
+  white-space: pre-wrap; text-align: left;
+}
+
+#manual-section { display: none; margin-top: 24px; text-align: left; border-top: 1px solid var(--border); padding-top: 20px; }
+#manual-section label { font-size: 0.8rem; color: var(--muted); font-family: 'Space Mono', monospace; display: block; margin-bottom: 8px; }
+#manual-input {
+  width: 100%; min-height: 120px; padding: 12px 16px;
+  background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: var(--radius); color: var(--text);
+  font-family: 'Space Mono', monospace; font-size: 0.82rem; resize: vertical; line-height: 1.6;
+}
+#manual-input:focus { outline: none; border-color: var(--accent2); }
+#manual-submit {
+  margin-top: 10px; padding: 10px 28px;
+  background: var(--accent2); color: #fff;
+  border: none; border-radius: 99px;
+  font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem; cursor: pointer;
+}
+[data-theme="light"] #manual-submit { color: #fff; }
+#manual-submit:hover { opacity: 0.85; }
+
+/* ═══════════════════════════════════════════
+   QUIZ
+═══════════════════════════════════════════ */
+#quiz-section { display: none; }
+.quiz-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; flex-wrap: wrap; gap: 12px; }
+.quiz-header h2 { font-size: 1.4rem; font-weight: 800; }
+.quiz-meta { font-family: 'Space Mono', monospace; font-size: 0.75rem; color: var(--muted); display: flex; gap: 16px; }
+.quiz-meta span { color: var(--accent2); }
+
+.progress-bar-wrap { height: 4px; background: var(--border); border-radius: 99px; margin-bottom: 40px; overflow: hidden; }
+.progress-bar { height: 100%; background: var(--accent); border-radius: 99px; transition: width 0.3s ease; width: 0%; }
+
+.questions-grid { display: grid; gap: 10px; }
+.q-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px 18px; display: flex; align-items: center; gap: 18px;
+  transition: border-color 0.15s, background 0.3s;
+}
+.q-card:hover { border-color: var(--accent2); }
+.q-num { font-family: 'Space Mono', monospace; font-size: 0.75rem; color: var(--muted); width: 28px; flex-shrink: 0; text-align: right; }
+.q-options { display: flex; gap: 7px; flex-wrap: wrap; }
+
+.opt-btn {
+  width: 40px; height: 40px; border-radius: var(--radius);
+  border: 1.5px solid var(--border); background: transparent;
+  color: var(--muted); font-family: 'Space Mono', monospace; font-size: 0.85rem; font-weight: 700;
+  cursor: pointer; transition: border-color 0.15s, background 0.15s, color 0.15s, transform 0.1s;
+}
+.opt-btn:hover { border-color: var(--accent2); color: var(--accent2); transform: scale(1.07); }
+.opt-btn.selected { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.opt-btn.nis { width: auto; padding: 0 11px; font-size: 0.63rem; letter-spacing: 0.03em; }
+.opt-btn.nis.selected { background: var(--surface2); border-color: var(--muted); color: var(--muted); }
+
+/* Result states */
+.q-card.result-correct { border-color: var(--correct); background: rgba(61,220,132,0.06); }
+.q-card.result-wrong   { border-color: var(--wrong);   background: rgba(255,92,106,0.06); }
+.q-card.result-excluded { border-color: var(--border); opacity: 0.45; }
+.opt-btn.result-correct-sel { background: var(--correct); border-color: var(--correct); color: #0d0f14; }
+.opt-btn.result-wrong-sel   { background: var(--wrong);   border-color: var(--wrong);   color: #fff; }
+.opt-btn.result-show-correct { border-color: var(--correct); color: var(--correct); }
+.q-result-label { margin-left: auto; font-family: 'Space Mono', monospace; font-size: 0.7rem; flex-shrink: 0; }
+.q-result-label.ok   { color: var(--correct); }
+.q-result-label.bad  { color: var(--wrong); }
+.q-result-label.skip { color: var(--muted); }
+
+/* ═══════════════════════════════════════════
+   BUTTONS ROW
+═══════════════════════════════════════════ */
+#submit-wrap { margin-top: 48px; display: flex; justify-content: center; }
+#submit-btn {
+  padding: 16px 52px; background: var(--accent); color: var(--bg);
+  border: none; border-radius: 99px; font-family: 'Syne', sans-serif;
+  font-weight: 800; font-size: 1rem; letter-spacing: 0.04em; cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 0 32px rgba(128,128,128,0.15);
+}
+#submit-btn:hover { transform: translateY(-2px); }
+
+/* ═══════════════════════════════════════════
+   RESULTS PANEL
+═══════════════════════════════════════════ */
+#results-panel { display: none; margin-top: 48px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 36px 40px; }
+#results-panel h3 { font-size: 1rem; font-weight: 800; letter-spacing: 0.06em; color: var(--muted); text-transform: uppercase; margin-bottom: 24px; }
+.score-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--border); font-family: 'Space Mono', monospace; font-size: 0.85rem; }
+.score-row:last-of-type { border-bottom: none; }
+.score-row .label { color: var(--muted); }
+.score-row .val { font-weight: 700; }
+.big-percent { font-size: 4rem; font-weight: 800; text-align: center; letter-spacing: -0.04em; margin: 20px 0 6px; }
+.grade-sub { text-align: center; font-family: 'Space Mono', monospace; font-size: 0.75rem; color: var(--muted); margin-bottom: 24px; }
+
+/* Post-result action buttons */
+.result-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 28px; }
+.action-btn {
+  padding: 11px 28px; border-radius: 99px;
+  font-family: 'Syne', sans-serif; font-size: 0.85rem; font-weight: 600;
+  cursor: pointer; transition: border-color 0.15s, color 0.15s, background 0.15s;
+  border: 1.5px solid var(--border); background: transparent; color: var(--muted);
+}
+.action-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+.action-btn.primary { background: var(--accent2); border-color: var(--accent2); color: #fff; }
+.action-btn.primary:hover { opacity: 0.85; }
+
+/* ═══════════════════════════════════════════
+   OVERVIEW MODAL
+═══════════════════════════════════════════ */
+#modal-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+#modal-overlay.open { display: flex; }
+
+#modal-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; width: 100%; max-width: 680px;
+  max-height: 88vh; overflow: hidden;
+  display: flex; flex-direction: column;
+  box-shadow: var(--shadow);
+  animation: modalIn 0.22s ease;
+}
+@keyframes modalIn { from { opacity: 0; transform: translateY(16px) scale(0.97); } to { opacity: 1; transform: none; } }
+
+#modal-header {
+  padding: 24px 28px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+#modal-header h2 { font-size: 1.1rem; font-weight: 800; }
+#modal-close {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 1.5px solid var(--border); background: transparent;
+  color: var(--muted); font-size: 1rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.15s, color 0.15s;
+}
+#modal-close:hover { border-color: var(--wrong); color: var(--wrong); }
+
+#modal-body { padding: 24px 28px; overflow-y: auto; flex: 1; }
+
+.ov-section { margin-bottom: 28px; }
+.ov-section:last-child { margin-bottom: 0; }
+.ov-title {
+  font-family: 'Space Mono', monospace; font-size: 0.7rem;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+}
+.ov-title .ov-count {
+  background: var(--surface2); border-radius: 99px;
+  padding: 2px 10px; font-size: 0.7rem;
+}
+.ov-title.correct-title { color: var(--correct); }
+.ov-title.wrong-title   { color: var(--wrong); }
+.ov-title.skip-title    { color: var(--muted); }
+
+.ov-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.ov-chip {
+  border-radius: var(--radius); padding: 7px 12px;
+  font-family: 'Space Mono', monospace; font-size: 0.78rem;
+  display: flex; align-items: center; gap: 8px;
+  border: 1px solid;
+}
+.ov-chip.correct { border-color: var(--correct); background: rgba(61,220,132,0.08); color: var(--correct); }
+.ov-chip.wrong   { border-color: var(--wrong);   background: rgba(255,92,106,0.08); color: var(--wrong); }
+.ov-chip.skipped { border-color: var(--border);  background: var(--surface2); color: var(--muted); }
+.ov-chip .q-label { color: var(--text); font-weight: 700; opacity: 0.7; }
+.ov-chip .arrow { opacity: 0.5; font-size: 0.7rem; }
+
+.ov-empty { font-family: 'Space Mono', monospace; font-size: 0.78rem; color: var(--muted); padding: 8px 0; }
+</style>
+</head>
+<body data-theme="dark">
+
+<header>
+  <div class="header-left">
+    <h1>MCQ Marker</h1>
+    <span class="tagline">IB · A-Level · Multiple Choice Grader</span>
+  </div>
+  <div class="theme-switcher">
+    <span>Theme</span>
+    <button class="theme-btn active" data-t="dark"   title="Dark"   onclick="setTheme('dark')"></button>
+    <button class="theme-btn"        data-t="light"  title="Light"  onclick="setTheme('light')"></button>
+    <button class="theme-btn"        data-t="purple" title="Purple" onclick="setTheme('purple')"></button>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- UPLOAD -->
+  <div id="upload-section">
+    <span class="upload-icon">📄</span>
+    <h2>Upload your mark scheme</h2>
+    <p>Drag &amp; drop or click below &nbsp;·&nbsp; PDF · TXT · CSV</p>
+    <label id="file-input-label" for="file-input">Choose file…</label>
+    <input type="file" id="file-input" accept=".pdf,.txt,.csv">
+    <div id="file-name"></div>
+    <div id="parse-error"></div>
+    <div id="manual-section">
+      <label>Or paste the answers manually (e.g.&nbsp; 1. D &nbsp;2. A &nbsp;3. B …):</label>
+      <textarea id="manual-input" placeholder="1. D&#10;2. A&#10;3. B&#10;4. C&#10;..."></textarea>
+      <button id="manual-submit">Load Answers</button>
+    </div>
+  </div>
+
+  <!-- QUIZ -->
+  <div id="quiz-section">
+    <div class="quiz-header">
+      <h2>Answer Sheet</h2>
+      <div class="quiz-meta">Questions: <span id="meta-total">—</span>&nbsp;·&nbsp;Answered: <span id="meta-answered">0</span></div>
+    </div>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+    <div class="questions-grid" id="questions-grid"></div>
+
+    <div id="submit-wrap">
+      <button id="submit-btn">Submit Answers</button>
+    </div>
+
+    <!-- RESULTS -->
+    <div id="results-panel">
+      <h3>Results</h3>
+      <div class="big-percent" id="big-percent">—</div>
+      <div class="grade-sub"   id="grade-sub"></div>
+      <div class="score-row"><span class="label">Correct answers</span>              <span class="val" id="r-correct">—</span></div>
+      <div class="score-row"><span class="label">Wrong answers</span>                <span class="val" id="r-wrong">—</span></div>
+      <div class="score-row"><span class="label">Not in syllabus (excluded)</span>   <span class="val" id="r-excl">—</span></div>
+      <div class="score-row"><span class="label">Unanswered</span>                   <span class="val" id="r-unanswered">—</span></div>
+      <div class="score-row"><span class="label">Questions counted</span>            <span class="val" id="r-counted">—</span></div>
+      <div class="score-row"><span class="label">Total questions</span>              <span class="val" id="r-total">—</span></div>
+
+      <div class="result-actions">
+        <button class="action-btn primary" id="overview-btn">📊 View Performance Overview</button>
+        <button class="action-btn" id="retry-btn">↩ New Mark Scheme</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- OVERVIEW MODAL -->
+<div id="modal-overlay">
+  <div id="modal-box">
+    <div id="modal-header">
+      <h2>Performance Overview</h2>
+      <button id="modal-close" title="Close">✕</button>
+    </div>
+    <div id="modal-body">
+      <!-- filled by JS -->
+    </div>
+  </div>
+</div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+/* ── STATE ───────────────────────────────── */
+let markScheme = {}, userAnswers = {}, submitted = false;
+let resultData = { correct: [], wrong: [], unanswered: [], excluded: [] };
+
+/* ── THEME ───────────────────────────────── */
+function setTheme(t) {
+  document.body.setAttribute('data-theme', t);
+  document.querySelectorAll('.theme-btn').forEach(b => b.classList.toggle('active', b.dataset.t === t));
+}
+
+/* ── DOM REFS ────────────────────────────── */
+const uploadSection = document.getElementById('upload-section');
+const fileInput     = document.getElementById('file-input');
+const fileNameEl    = document.getElementById('file-name');
+const parseError    = document.getElementById('parse-error');
+const manualSection = document.getElementById('manual-section');
+const manualInput   = document.getElementById('manual-input');
+const manualSubmit  = document.getElementById('manual-submit');
+const quizSection   = document.getElementById('quiz-section');
+const questionsGrid = document.getElementById('questions-grid');
+const progressBar   = document.getElementById('progress-bar');
+const submitBtn     = document.getElementById('submit-btn');
+const resultsPanel  = document.getElementById('results-panel');
+const retryBtn      = document.getElementById('retry-btn');
+const overviewBtn   = document.getElementById('overview-btn');
+const modalOverlay  = document.getElementById('modal-overlay');
+const modalClose    = document.getElementById('modal-close');
+const modalBody     = document.getElementById('modal-body');
+
+/* ── DRAG & DROP ─────────────────────────── */
+uploadSection.addEventListener('dragover', e => { e.preventDefault(); uploadSection.classList.add('drag-over'); });
+uploadSection.addEventListener('dragleave', () => uploadSection.classList.remove('drag-over'));
+uploadSection.addEventListener('drop', e => {
+  e.preventDefault(); uploadSection.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) handleFile(fileInput.files[0]); });
+manualSubmit.addEventListener('click', () => {
+  const scheme = parseMarkScheme(manualInput.value);
+  if (!Object.keys(scheme).length) { showError('No answers detected.\nUse format: 1. D  2. A  3. B …'); return; }
+  loadScheme(scheme, 'manual input');
+});
+
+/* ── FILE HANDLING ───────────────────────── */
+async function handleFile(file) {
+  fileNameEl.textContent = '⏳ Reading ' + file.name + '…';
+  parseError.style.display = 'none';
+  manualSection.style.display = 'none';
+  try {
+    const ext = file.name.split('.').pop().toLowerCase();
+    const text = ext === 'pdf' ? await extractPDFText(file) : await file.text();
+    const scheme = parseMarkScheme(text);
+    if (!Object.keys(scheme).length) {
+      showError('No answers found in the file.\n\nYou can paste them manually below.');
+      manualSection.style.display = 'block'; return;
+    }
+    loadScheme(scheme, file.name);
+  } catch (err) {
+    showError('Could not read file: ' + err.message + '\n\nTry pasting the answers manually below.');
+    manualSection.style.display = 'block';
+  }
+}
+
+async function extractPDFText(file) {
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  let out = '';
+  for (let p = 1; p <= pdf.numPages; p++) {
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    out += content.items.map(i => i.str).join(' ') + '\n';
+  }
+  return out;
+}
+
+function parseMarkScheme(text) {
+  const answers = {};
+  const re = /\b(\d{1,3})\s*[.):\-]?\s*([ABCD])\b/gi;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    const num = parseInt(m[1]);
+    if (num >= 1 && num <= 100) answers[num] = m[2].toUpperCase();
+  }
+  return answers;
+}
+
+function loadScheme(scheme, source) {
+  markScheme = scheme;
+  fileNameEl.textContent = `✓ ${source} · ${Object.keys(scheme).length} questions loaded`;
+  buildQuiz();
+}
+
+function showError(msg) {
+  fileNameEl.textContent = '';
+  parseError.textContent = msg;
+  parseError.style.display = 'block';
+}
+
+/* ── BUILD QUIZ ──────────────────────────── */
+function buildQuiz() {
+  const nums = Object.keys(markScheme).map(Number).sort((a,b) => a-b);
+  userAnswers = {}; submitted = false;
+  resultData = { correct: [], wrong: [], unanswered: [], excluded: [] };
+  nums.forEach(n => userAnswers[n] = null);
+  questionsGrid.innerHTML = '';
+
+  nums.forEach(n => {
+    const card = document.createElement('div');
+    card.className = 'q-card'; card.dataset.q = n;
+
+    const numEl = document.createElement('div');
+    numEl.className = 'q-num'; numEl.textContent = n;
+
+    const opts = document.createElement('div');
+    opts.className = 'q-options';
+
+    ['A','B','C','D'].forEach(letter => {
+      const btn = document.createElement('button');
+      btn.className = 'opt-btn'; btn.dataset.letter = letter; btn.textContent = letter;
+      btn.addEventListener('click', () => selectAnswer(n, letter));
+      opts.appendChild(btn);
+    });
+    const nis = document.createElement('button');
+    nis.className = 'opt-btn nis'; nis.dataset.letter = 'NIS'; nis.textContent = 'Not in syllabus';
+    nis.addEventListener('click', () => selectAnswer(n, 'NIS'));
+    opts.appendChild(nis);
+
+    card.appendChild(numEl); card.appendChild(opts);
+    questionsGrid.appendChild(card);
+  });
+
+  document.getElementById('meta-total').textContent = nums.length;
+  updateProgress();
+  uploadSection.style.display = 'none';
+  quizSection.style.display = 'block';
+  resultsPanel.style.display = 'none';
+  submitBtn.style.display = 'inline-block';
+}
+
+/* ── SELECT ──────────────────────────────── */
+function selectAnswer(qNum, letter) {
+  if (submitted) return;
+  userAnswers[qNum] = letter;
+  document.querySelector(`.q-card[data-q="${qNum}"]`)
+    .querySelectorAll('.opt-btn')
+    .forEach(btn => btn.classList.toggle('selected', btn.dataset.letter === letter));
+  updateProgress();
+}
+
+function updateProgress() {
+  const total = Object.keys(userAnswers).length;
+  const done  = Object.values(userAnswers).filter(v => v !== null).length;
+  document.getElementById('meta-answered').textContent = done;
+  progressBar.style.width = (total > 0 ? done/total*100 : 0) + '%';
+}
+
+/* ── SUBMIT ──────────────────────────────── */
+submitBtn.addEventListener('click', () => {
+  submitted = true; submitBtn.style.display = 'none';
+  let correct = 0, wrong = 0, excluded = 0, unanswered = 0;
+  resultData = { correct: [], wrong: [], unanswered: [], excluded: [] };
+  const nums = Object.keys(markScheme).map(Number).sort((a,b) => a-b);
+
+  nums.forEach(n => {
+    const ua = userAnswers[n], ca = markScheme[n];
+    const card = document.querySelector(`.q-card[data-q="${n}"]`);
+    const lbl = document.createElement('div'); lbl.className = 'q-result-label';
+
+    card.querySelectorAll('.opt-btn').forEach(btn => {
+      if (ua === 'NIS' || ua === null) return;
+      const l = btn.dataset.letter;
+      if (l === ua && ua === ca)       btn.classList.add('result-correct-sel');
+      else if (l === ua && ua !== ca)  btn.classList.add('result-wrong-sel');
+      else if (l === ca && ua !== ca)  btn.classList.add('result-show-correct');
+    });
+
+    if (ua === 'NIS') {
+      excluded++; card.classList.add('result-excluded');
+      lbl.textContent = 'EXCL'; lbl.classList.add('skip');
+      resultData.excluded.push({ q: n, correct: ca });
+    } else if (ua === null) {
+      unanswered++; wrong++; card.classList.add('result-wrong');
+      lbl.textContent = '— ' + ca; lbl.classList.add('bad');
+      resultData.unanswered.push({ q: n, correct: ca });
+      // show correct answer hint
+      card.querySelectorAll('.opt-btn').forEach(btn => {
+        if (btn.dataset.letter === ca) btn.classList.add('result-show-correct');
+      });
+    } else if (ua === ca) {
+      correct++; card.classList.add('result-correct');
+      lbl.textContent = '✓'; lbl.classList.add('ok');
+      resultData.correct.push({ q: n, answer: ca });
+    } else {
+      wrong++; card.classList.add('result-wrong');
+      lbl.textContent = '✗ ' + ca; lbl.classList.add('bad');
+      resultData.wrong.push({ q: n, given: ua, correct: ca });
+    }
+    card.appendChild(lbl);
+  });
+
+  const counted = nums.length - excluded;
+  const pct = counted > 0 ? Math.round(correct/counted*100) : 0;
+
+  const bigEl = document.getElementById('big-percent');
+  bigEl.textContent = pct + '%';
+  bigEl.style.color = pct >= 70 ? 'var(--correct)' : pct >= 50 ? 'var(--accent)' : 'var(--wrong)';
+  document.getElementById('grade-sub').textContent    = `${correct} / ${counted} correct (after exclusions)`;
+  document.getElementById('r-correct').textContent   = correct;
+  document.getElementById('r-wrong').textContent     = wrong - unanswered;
+  document.getElementById('r-unanswered').textContent = unanswered;
+  document.getElementById('r-excl').textContent      = excluded;
+  document.getElementById('r-counted').textContent   = counted;
+  document.getElementById('r-total').textContent     = nums.length;
+
+  resultsPanel.style.display = 'block';
+  resultsPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
+/* ── OVERVIEW MODAL ──────────────────────── */
+overviewBtn.addEventListener('click', () => {
+  buildOverview();
+  modalOverlay.classList.add('open');
+});
+modalClose.addEventListener('click', () => modalOverlay.classList.remove('open'));
+modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) modalOverlay.classList.remove('open'); });
+
+function buildOverview() {
+  const { correct, wrong, unanswered, excluded } = resultData;
+
+  modalBody.innerHTML = `
+    ${overviewSection('correct-title', '✓ Correct', correct.length,
+      correct.length === 0
+        ? '<div class="ov-empty">None</div>'
+        : correct.map(r => `<div class="ov-chip correct"><span class="q-label">Q${r.q}</span><span class="arrow">→</span>${r.answer}</div>`).join('')
+    )}
+    ${overviewSection('wrong-title', '✗ Incorrect', wrong.length,
+      wrong.length === 0
+        ? '<div class="ov-empty">None — great work!</div>'
+        : wrong.map(r => `<div class="ov-chip wrong"><span class="q-label">Q${r.q}</span><span class="arrow">→</span>You: ${r.given} &nbsp;·&nbsp; Correct: ${r.correct}</div>`).join('')
+    )}
+    ${overviewSection('skip-title', '— Unanswered', unanswered.length,
+      unanswered.length === 0
+        ? '<div class="ov-empty">None — all questions attempted!</div>'
+        : unanswered.map(r => `<div class="ov-chip skipped"><span class="q-label">Q${r.q}</span><span class="arrow">→</span>Answer: ${r.correct}</div>`).join('')
+    )}
+    ${overviewSection('skip-title', '⊘ Not in Syllabus', excluded.length,
+      excluded.length === 0
+        ? '<div class="ov-empty">None excluded</div>'
+        : excluded.map(r => `<div class="ov-chip skipped"><span class="q-label">Q${r.q}</span></div>`).join('')
+    )}
+  `;
+}
+
+function overviewSection(titleClass, label, count, innerHtml) {
+  return `
+    <div class="ov-section">
+      <div class="ov-title ${titleClass}">${label} <span class="ov-count">${count}</span></div>
+      <div class="ov-chips">${innerHtml}</div>
+    </div>`;
+}
+
+/* ── RETRY ───────────────────────────────── */
+retryBtn.addEventListener('click', () => {
+  quizSection.style.display = 'none';
+  uploadSection.style.display = 'block';
+  fileInput.value = ''; fileNameEl.textContent = '';
+  parseError.style.display = 'none';
+  manualSection.style.display = 'none';
+  manualInput.value = '';
+  markScheme = {}; userAnswers = {}; submitted = false;
+  resultData = { correct: [], wrong: [], unanswered: [], excluded: [] };
+});
+</script>
+</body>
+</html>
